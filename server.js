@@ -20,9 +20,6 @@ function Forecast(day) {
   this.time = new Date(day.time * 1000).toString().slice(0, 15);
 }
 
-// function searchToLatLong(request, response) {
-//   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${request.query.data}&key=${process.env.GEOCODE_API_KEY}`;
-
 function serchToLatLong(query){
   const url =`https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
   return superagent.get(url)
@@ -47,9 +44,6 @@ function darkskyWeather(lat, lon){
     });
 }
 
-
-
-
 app.use(express.static('./public'));
 app.use(cors());
 
@@ -67,28 +61,5 @@ app.get('/weather', (currentLoc, response) => {
       console.log(`Sent Weather`)
     })
 })
-
-// app.get('/weather', (request, response) => {
-//   try {
-//     const weatherData = require('./data/darksky.json');
-//     const dailyWeather = Object.values(weatherData.daily.data);
-//     const blob = dailyWeather.map(day => new Forecast(day));
-//     console.log(blob);
-//     response.send(blob);
-//   } catch (error) {
-//     handleError(error);
-//   }
-// });
-
-// app.use('*', (request, response) =>
-//   response.send('Sorry, that route does not exist.')
-// );
-
-// function handleError(err, response) {
-//   console.error(err);
-//   if (response) {
-//     response.status(500).send('Sorry, something went wrong here.');
-//   }
-// }
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
