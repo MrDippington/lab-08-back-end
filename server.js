@@ -5,7 +5,12 @@ const cors = require("cors");
 const app = express();
 const superagent = require("superagent");
 const PORT = process.env.PORT || 3000;
+const pg = require('pg');
+const client = new pg.Client(process.env.DATABASE_URL);
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+client.connect();
+
+
 
 function Location(city, geoData) {
   // console.log('DATA IS: ' + geoData.body.results);
@@ -31,7 +36,7 @@ function Event(event) {
 app.use(cors());
 
 // Respond to GET requests from client
-app.get("/location", searchLatLong);
+app.get("/location", lookupLocation);
 app.get("/weather", getWeather);
 app.get("/events", getEvents);
 
@@ -91,3 +96,52 @@ function getEvents(request, response) {
     })
     .catch(error => handleError(error, response));
 }
+
+Location.prototype.save = function() {
+  let NEWSQL = `INSERT INTO locations (search_query,formatted_address,latitude,longitude) VALUES($1,$2,$3,$4) RETURNING id`;
+  let newValues = Object.values(this);
+  return client.query(NEWSQL, newValues)
+    .then( res => {
+      return res.rows[0].id;      
+    });
+};
+
+function lookupLocation(request, response) {
+
+  const SQL = `SELECT * FROM locations WHERE search_query=$1;`;
+  const values = [request.query];
+
+  return client.query(SQL, values)
+    .then(result => {
+      if(result.rowCount > 0) {
+        request.cacheHit(result);
+      } else {
+        
+          fetchLocation(request.query).then(data => {
+            response.send(data)
+          });
+        
+        }
+    })
+    .catch(console.error);
+};
+
+function fetchLocation(query) {
+  console.log(query);
+  const _URL = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
+  return superagent.get(_URL)
+
+    .then( data => {
+      console.log(data);
+      if ( ! data.body.results.length ) { throw 'No Data'; }
+      else {
+        let location = new Location(query, data);
+        let loc = location.save()
+          .then( res => {
+            location.id = res;
+            return location;
+          });  
+        return loc;
+      }
+    }); 
+};
