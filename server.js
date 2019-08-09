@@ -47,7 +47,6 @@ function handleError(error, response) {
   }
 }
 
-// Get lat/long info and map from Google API
 function searchLatLong(request, response) {
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${
     request.query.data
